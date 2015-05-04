@@ -3,6 +3,7 @@ function [p, S] = hoslem(varargin)
 %
 % [p, S] = hoslem(ypred, y)
 % [p, S] = hoslem(mdl, x, y)
+% [p, S] = hoslem(..., ng)
 %
 % Input variables:
 %
@@ -33,19 +34,32 @@ function [p, S] = hoslem(varargin)
 
 % Parse input
 
-if nargin == 3 && strcmp(class(varargin{1}), 'GeneralizedLinearModel')
+isng = cellfun(@(x) isnumeric(x) && isscalar(x), varargin);
+if any(isng)
+    ng = varargin{isng};
+    varargin = varargin(~isng);
+else
+    ng = 10;
+end
+
+if isa(varargin{1}, 'GeneralizedLinearModel') && length(varargin) == 3
     mdl = varargin{1};
     x = varargin{2};
     y = varargin{3};
     ypred = predict(mdl, x);
-elseif nargin == 2
+elseif isa(varargin{1}, 'GeneralizedLinearModel') && isa(varargin{2}, 'dataset')
+    mdl = varargin{1};
+    ds = varargin{2};
+    x = double(ds(:,mdl.PredictorNames));
+    y = double(ds(:,mdl.ResponseName));
+    ypred = predict(mdl, ds);
+elseif length(varargin) == 2
     ypred = varargin{1};
     y = varargin{2};
 else
     error('Could not parse input');
 end
 
-ng = 10;
 
 % Determine bins
 
